@@ -3,9 +3,11 @@ version: '3.9'
 services:
   # Zookeeper
   zookeeper:
-    image: 'bitnami/zookeeper:latest'
+    image: 'quay.io/debezium/zookeeper:2.6'
     ports: 
       - '2181:2181'
+      - '2888:2888'
+      - '3888:3888'
     container_name: zookeeper
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
@@ -15,19 +17,14 @@ services:
 
   # Kafka Broker
   kafka:
-    image: 'bitnami/kafka:latest'
+    image: 'quay.io/debezium/kafka:2.6'
     ports:
+      - '9092:9092'
       - '9093:9093'
       - '9094:9094'
     container_name: kafka
     environment:
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT,EXTERNAL_DOCKER:PLAINTEXT
-      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093,EXTERNAL_DOCKER://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093,EXTERNAL_DOCKER://host.docker.internal:9094
-      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - ZOOKEEPER_CONNECT=zookeeper:2181
     depends_on:
       - zookeeper
     tty: true
@@ -39,18 +36,19 @@ services:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
     ports:
-      - '8080:8080'
+      - '8081:8081'
     restart: always
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
       - KAFKA_CLUSTERS_0_ZOOKEEPER=2181
       - KAFKA_CLUSTERS_0_READONLY=false
+      - SERVER_PORT=8081
     networks:
       - kafka_network
 
   mysql:
-    image: "mysql"
+    image: "mysql:8.0.32"
     container_name: mysql
     ports:
       - "3306:3306"
@@ -62,7 +60,7 @@ services:
       - "kafka_network"
 
   connect:
-    image: "debezium/connect"
+    image: "quay.io/debezium/connect:2.6"
     container_name: connect
     depends_on:
       - "zookeeper"
@@ -76,6 +74,18 @@ services:
       - "CONFIG_STORAGE_TOPIC=test2"
       - "OFFSET_STORAGE_TOPIC=test3"
       - "STATUS_STORAGE_TOPIC=test4"
+    networks:
+      - kafka_network
+
+  debezium-ui:
+    image: "quay.io/debezium/debezium-ui:2.4"
+    container_name: debezium-ui
+    depends_on:
+      - "connect"
+    ports:
+      - "8080:8080"
+    environment:
+      - "KAFKA_CONNECT_URIS=http://connect:8083"
     networks:
       - kafka_network
 networks:
