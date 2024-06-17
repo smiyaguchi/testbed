@@ -54,8 +54,9 @@ services:
       - "3306:3306"
     environment:
       - "MYSQL_ROOT_PASSWORD=root"
-      - "MYSQL_USER=mysqluser"
-      - "MYSQL_PASSWORD=mysqlpw"
+    volumes:
+      - ./container/mysql/cnf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./container/mysql/script:/docker-entrypoint-initdb.d
     networks:
       - "kafka_network"
 
@@ -71,9 +72,9 @@ services:
     environment:
       - "BOOTSTRAP_SERVERS=kafka:9092"
       - "GROUP_ID=1"
-      - "CONFIG_STORAGE_TOPIC=test2"
-      - "OFFSET_STORAGE_TOPIC=test3"
-      - "STATUS_STORAGE_TOPIC=test4"
+      - "CONFIG_STORAGE_TOPIC=connect_configs"
+      - "OFFSET_STORAGE_TOPIC=connect_offsets"
+      - "STATUS_STORAGE_TOPIC=connect_status"
     networks:
       - kafka_network
 
