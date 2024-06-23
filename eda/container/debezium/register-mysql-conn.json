@@ -11,6 +11,8 @@
         "topic.prefix": "mysql", 
         "schema.history.internal.kafka.bootstrap.servers": "kafka:9092", 
         "schema.history.internal.kafka.topic": "schema.history.mysql", 
-        "include.schema.changes": "true" 
+        "signal.enabled.channels": "source,jmx",
+        "signal.data.collection": "web.debezium_signal",
+        "include.schema.changes": "true"
     }
 }
