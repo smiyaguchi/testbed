@@ -90,24 +90,26 @@ services:
       - "kafka_network"
 
   connect:
-    image: "quay.io/debezium/connect:2.6"
+    build:
+      context: container/debezium
+        # image: "quay.io/debezium/connect:2.6"
     container_name: connect
     ports:
       - "8083:8083"
       - "8778:8778"
-      - "9012:9012"
+      - "1976:1976"
+      - "8090:8090"
+      - "8080:8080"
     environment:
       - "BOOTSTRAP_SERVERS=kafka:9092"
       - "GROUP_ID=1"
       - "CONFIG_STORAGE_TOPIC=connect_configs"
       - "OFFSET_STORAGE_TOPIC=connect_offsets"
       - "STATUS_STORAGE_TOPIC=connect_status"
+      - "KAFKA_OPTS=-javaagent:/kafka/etc/jmx_prometheus_javaagent.jar=8080:/kafka/etc/config.yml"
       - "JMXHOST=0.0.0.0"
-      - "JMXPOST=9012"
-      - "ENABLE_JOLOKIA=true"
+      - "JMXPORT=1976"
     depends_on:
-      zookeeper:
-        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
@@ -128,13 +130,25 @@ services:
         #     - kafka_network
 
   prometheus:
-    image: "prom/prometheus"
+    build:
+      context: container/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
     container_name: prom
     ports:
       - "9090:9090"
     networks:
       - kafka_network
 
+  grafana:
+    build:
+      context: container/grafana
+    container_name: grafana
+    environment:
+      - DS_PROMETHEUS=prometheus
+    ports:
+      - "3000:3000"
+    networks:
+      - kafka_network
 
         # ubuntu:
         #   image: "ubuntu"
